@@ -19,7 +19,7 @@ if st.button("Fetch Price History"):
         st.error("Please enter your API key.")
     else:
         # Replace with Schwab's actual API endpoint (hypothetical example)
-        url = "https://api.schwab.com/marketdata/v1"
+        url = "https://api.schwabapi.com/marketdata/v1"
         
         # Parameters (adjust based on Schwab's API requirements)
         params = {
