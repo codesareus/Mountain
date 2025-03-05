@@ -1,65 +1,88 @@
-import requests
-import pandas as pd
 import streamlit as st
-import datetime
+import requests
+import webbrowser
+import urllib.parse
 
-# Schwab API details
-CLIENT_ID = "4nApHqYZJnYndGYnQxXGn4pAdxDQ48Gi"
-REDIRECT_URI = "https://api.schwabapi.com/marketdata/v1"
-REFRESH_TOKEN = "3kBzb6yaQZ6tm3vM"
-ACCESS_TOKEN_URL = "https://api.schwabapi.com/v1/oauth2/token"
-PRICE_HISTORY_URL = "https://api.schwabapi.com/v1/marketdata/{symbol}/pricehistory"
+# Schwab API credentials
+CLIENT_ID = "fnB6k1X6JSFlQHravRt6T9m86AZlkD04"
+#CLIENT_ID = "4nApHqYZJnYndGYnQxXGn4pAdxDQ48Gi"
+CLIENT_SECRET = "3kBzb6yaQZ6tm3vM"
+REDIRECT_URI = "https://developer.schwab.com/oauth2-redirect.html"  # Must match Schwab settings
+AUTHORIZATION_URL = "https://api.schwabapi.com/v1/oauth/authorize"
+TOKEN_URL = "https://api.schwabapi.com/v1/oauth/token"
 
-# Function to get access token
-def get_access_token():
+# Generate the login URL
+params = {
+    "response_type": "code",
+    "client_id": CLIENT_ID,
+    "scope": "readonly",  # Adjust scope if needed
+    "redirect_uri": REDIRECT_URI,
+}
+auth_url = f"{AUTHORIZATION_URL}?{urllib.parse.urlencode(params)}"
+
+st.title("Schwab API Authentication")
+
+if st.button("Login to Schwab"):
+    webbrowser.open(auth_url)  # Open login page in browser
+    st.write(f"[Click here if it doesn't open automatically]({auth_url})")
+
+auth_code = st.text_input("Paste the authorization code from the URL after login:")
+
+def get_access_token(auth_code):
     payload = {
-        'grant_type': 'refresh_token',
-        'refresh_token': REFRESH_TOKEN,
-        'client_id': CLIENT_ID
+        "grant_type": "authorization_code",
+        "code": auth_code,
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "redirect_uri": REDIRECT_URI,
     }
-    response = requests.post(ACCESS_TOKEN_URL, data=payload)
+    
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    
+    response = requests.post(TOKEN_URL, data=payload, headers=headers)
     
     if response.status_code == 200:
-        return response.json().get('access_token')
+        token_data = response.json()
+        st.success("Access token obtained!")
+        st.write(token_data)  # Display token details (for debugging)
+        return token_data.get("access_token")
     else:
-        st.error(f"Error fetching access token: {response.text}")
+        st.error(f"Error getting access token: {response.text}")
         return None
 
-def get_price_history(symbol, period='1d', frequency='minute'):
-    access_token = get_access_token()
-    if not access_token:
-        return None
+if auth_code and st.button("Get Access Token"):
+    access_token = get_access_token(auth_code)
+
+def get_price_history(symbol, access_token):
+    url = f"https://api.schwabapi.com/v1/marketdata/{symbol}/pricehistory"
     
-    headers = {"Authorization": f"Bearer {access_token}"}
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Accept": "application/json"
+    }
+    
     params = {
-        "apikey": CLIENT_ID,
         "periodType": "day",
         "period": 1,
         "frequencyType": "minute",
         "frequency": 1
     }
-    
-    response = requests.get(PRICE_HISTORY_URL.format(symbol=symbol), headers=headers, params=params)
-    
+
+    response = requests.get(url, headers=headers, params=params)
+
     if response.status_code == 200:
-        data = response.json()
-        return data.get("candles", [])
+        return response.json()
     else:
         st.error(f"Error fetching price history: {response.text}")
         return None
 
+# UI to enter stock symbol
+symbol = st.text_input("Enter Stock Symbol (e.g., AAPL)")
 
-st.title("Schwab Stock Price History")
-
-symbol = st.text_input("Enter Stock Symbol (e.g., AAPL)", "AAPL")
-
-if st.button("Fetch Price History"):
-    data = get_price_history(symbol)
-    
+if access_token and symbol and st.button("Fetch Price History"):
+    data = get_price_history(symbol, access_token)
     if data:
-        df = pd.DataFrame(data)
-        df['datetime'] = pd.to_datetime(df['datetime'], unit='ms')
-        st.write(df)
-        st.line_chart(df.set_index("datetime")["close"])
-    else:
-        st.warning("No data found!")
+        st.write(data)
+
+
+
