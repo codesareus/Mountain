@@ -1,67 +1,26 @@
-import streamlit as st
 import requests
 import pandas as pd
-import matplotlib.pyplot as plt
+import streamlit as st
+import datetime
 
-# Set up the Streamlit page
-st.title("Charles Schwab Price History App")
+# Schwab API details
+CLIENT_ID = "your_api_key_here"
+REDIRECT_URI = "your_redirect_uri_here"
+REFRESH_TOKEN = "your_refresh_token_here"
+ACCESS_TOKEN_URL = "https://api.schwabapi.com/v1/oauth2/token"
+PRICE_HISTORY_URL = "https://api.schwabapi.com/v1/marketdata/{symbol}/pricehistory"
 
-# Input for API Key (use Streamlit secrets for better security)
-api_key = st.text_input("Enter your API Key:", type="password")
-
-# User inputs
-symbol = st.text_input("Enter a stock symbol (e.g., AAPL):", "AAPL")
-start_date = st.date_input("Start date:")
-end_date = st.date_input("End date:")
-
-if st.button("Fetch Price History"):
-    if not api_key:
-        st.error("Please enter your API key.")
+# Function to get access token
+def get_access_token():
+    payload = {
+        'grant_type': 'refresh_token',
+        'refresh_token': REFRESH_TOKEN,
+        'client_id': CLIENT_ID
+    }
+    response = requests.post(ACCESS_TOKEN_URL, data=payload)
+    
+    if response.status_code == 200:
+        return response.json().get('access_token')
     else:
-        # Replace with Schwab's actual API endpoint (hypothetical example)
-        url = "https://api.schwabapi.com/marketdata/v1/pricehistory"
-        
-        # Parameters (adjust based on Schwab's API requirements)
-        params = {
-            "symbol": symbol,
-            "from": start_date.strftime("%Y-%m-%d"),
-            "to": end_date.strftime("%Y-%m-%d"),
-            "apikey": api_key,
-            "resolution": "D"  # Daily data
-        }
-
-        # Headers (if required)
-        headers = {
-            "Accept": "application/json"
-        }
-
-        try:
-            response = requests.get(url, params=params, headers=headers)
-            
-            if response.status_code == 200:
-                data = response.json()
-                
-                # Convert to DataFrame (adjust based on the API response structure)
-                # Hypothetical example:
-                df = pd.DataFrame(data["candles"])
-                df["datetime"] = pd.to_datetime(df["datetime"], unit="ms")  # Convert epoch to datetime
-                df.set_index("datetime", inplace=True)
-
-                # Display data
-                st.subheader(f"Price History for {symbol}")
-                st.dataframe(df)
-
-                # Plot closing prices
-                st.subheader("Closing Prices Over Time")
-                fig, ax = plt.subplots()
-                ax.plot(df.index, df["close"], label="Close Price")
-                ax.set_xlabel("Date")
-                ax.set_ylabel("Price (USD)")
-                ax.legend()
-                st.pyplot(fig)
-
-            else:
-                st.error(f"API request failed: {response.status_code} - {response.text}")
-        
-        except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
+        st.error(f"Error fetching access token: {response.text}")
+        return None
