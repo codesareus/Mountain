@@ -28,30 +28,6 @@ if st.button("Login to Schwab"):
 
 auth_code = st.text_input("Paste the authorization code from the URL after login:")
 
-def get_access_token(auth_code):
-    payload = {
-        "grant_type": "authorization_code",
-        "code": auth_code,
-        "client_id": CLIENT_ID,
-        "client_secret": CLIENT_SECRET,
-        "redirect_uri": REDIRECT_URI,
-    }
-    
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    
-    response = requests.post(TOKEN_URL, data=payload, headers=headers)
-    
-    if response.status_code == 200:
-        token_data = response.json()
-        st.success("Access token obtained!")
-        st.write(token_data)  # Display token details (for debugging)
-        return token_data.get("access_token")
-    else:
-        st.error(f"Error getting access token: {response.text}")
-        return None
-
-if auth_code and st.button("Get Access Token"):
-    access_token = get_access_token(auth_code)
 
 def get_price_history(symbol, access_token):
     url = f"https://api.schwabapi.com/v1/marketdata/{symbol}/pricehistory"
