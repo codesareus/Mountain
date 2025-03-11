@@ -43,4 +43,4 @@ v_line = ax.axvline(x=5, color='b', lw=2, linestyle='--')
 DraggableLine(h_line)
 DraggableLine(v_line)
 
-plt.show()
+plt.show(fig)
