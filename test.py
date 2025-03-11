@@ -28,8 +28,12 @@ class DraggableLine:
 
 # Create a figure
 fig, ax = plt.subplots()
+
+x=[1,2,3,4,5,6,8,10,20]
+y=[1,2,3,4,5,6,8,10,20]
 ax.set_xlim(0, 10)
 ax.set_ylim(0, 10)
+ax.plot(x, y)
 
 # Add a draggable vertical and horizontal line
 h_line = ax.axhline(y=5, color='r', lw=2, linestyle='-')
