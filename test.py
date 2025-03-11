@@ -1,3 +1,4 @@
+import streamlit as st
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -43,4 +44,4 @@ v_line = ax.axvline(x=5, color='b', lw=2, linestyle='--')
 DraggableLine(h_line)
 DraggableLine(v_line)
 
-plt.show(fig)
+st.pyplot(fig)
